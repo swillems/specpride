@@ -5,6 +5,7 @@ from typing import Dict, Iterable
 import pandas as pd
 import pyteomics.mgf
 import spectrum_utils.spectrum as sus
+from pyopenms import IdXMLFile
 
 import json
 
@@ -163,3 +164,39 @@ def write_distance_dict_to_json(filename: str, distances: Dict) -> None:
     # path = os.path.join(RESULTFOLDER, filename)
     with open(filename, 'w') as outfile:
         json.dump(distances, outfile, indent=4, sort_keys=True)
+
+
+def read_idXML(filename):
+    """
+    Read idXML file returns as a dictionary of pairs of
+    the identifier and the amino-acid sequences (aa-seq).
+
+    Parameters
+    ----------
+    filename: str
+        The (relative) path to the file to read.
+
+    Return
+    ------
+    Dict
+        {spectrum-id: aa-sequence}
+    """
+    idxml_reader =IdXMLFile()
+
+    prot_ids = []; pep_ids = []
+    idxml_reader.load(filename, prot_ids, pep_ids)
+
+    return_dict = {}
+
+    for peptide_id in pep_ids:
+        spectrum_ref = peptide_id.getMetaValue(b"spectrum_reference").decode()
+        spectrum_ref = spectrum_ref.split("=")[-1]
+        hits = []
+        for i, hit in enumerate(peptide_id.getHits()):
+            if i > 0:
+                raise ValueError("More than one")
+            peptide_seq = hit.getSequence().toString()
+        if spectrum_ref in return_dict:
+            raise ValueError("Non-unique id")
+        return_dict[spectrum_ref] = peptide_seq
+    return return_dict
