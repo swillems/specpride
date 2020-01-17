@@ -68,7 +68,7 @@ def _dict_to_spectrum(spectrum_dict: Dict):
         spectrum_dict['params']['charge'][0],
         spectrum_dict['m/z array'],
         spectrum_dict['intensity array'],
-        retention_time=spectrum_dict['params']['rtinseconds'])
+        retention_time=spectrum_dict['params'].get('rtinseconds'))
 
 
 def _spectrum_to_dict(spectrum: sus.MsmsSpectrum):
@@ -190,7 +190,7 @@ def read_idXML(filename):
 
     for peptide_id in pep_ids:
         spectrum_ref = peptide_id.getMetaValue(b"spectrum_reference").decode()
-        spectrum_ref = spectrum_ref.split("=")[-1]
+        spectrum_ref = int(spectrum_ref.split("=")[-1])
         hits = []
         for i, hit in enumerate(peptide_id.getHits()):
             if i > 0:

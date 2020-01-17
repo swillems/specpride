@@ -126,9 +126,13 @@ def annotate(spectra, identifications):
         sorted(spectra.items()),
         1
     ):
+        if spectrum_index not in identifications:
+            # TODO: what if no ids was found?
+            continue
         identification = identifications[spectrum_index]
         sequence = pyopenms.AASequence().fromString(identification)
         modifications = {}
+        import pdb; pdb.set_trace()
         for residue_index, residue in enumerate(sequence):
             if residue.isModified():
                 delta_mass = residue.getModification().getDiffMonoMass()
