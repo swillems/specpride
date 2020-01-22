@@ -69,7 +69,7 @@ def evaluate_representatives(
     else:
         raise ValueError("Metric not supported")
     logging.info(f'Reading cluster member spectra from {cluster_members_file_name}')
-    cluster_member_spectra = ms_io.read_cluster_spectra(
+    cluster_member_spectra = ms_io.read_spectra(
         cluster_members_file_name
     )
     if cluster_members_identifications_file_name is not None:
@@ -82,12 +82,11 @@ def evaluate_representatives(
         )
     clusters = collections.defaultdict(list)
     logging.info(f"Grouping cluster member spectra")
-    for cluster_member in cluster_member_spectra.values():
+    for cluster_member in cluster_member_spectra:
         clusters[cluster_member.cluster].append(cluster_member)
     logging.info(f"Reading representatative member spectra from {representatives_file_name}")
-    representative_spectra = ms_io.read_cluster_spectra(
-        representatives_file_name,
-        usi_present=False
+    representative_spectra = ms_io.read_spectra(
+        representatives_file_name
     )
     if representatives_identifications_file_name is not None:
         representatives_identifications = ms_io.read_idXML(
@@ -121,33 +120,38 @@ def evaluate_representatives(
 def annotate(spectra, identifications):
     # TODO: Currently idXML returns index based spectrum reference instead of
     # title based spectrum reference
-    new_spectra = {}
-    for spectrum_index, (spectrum_id, spectrum) in enumerate(
-        sorted(spectra.items()),
+    # new_spectra = {}
+    for spectrum_index, spectrum in enumerate(
+        spectra,
         1
     ):
+        spectrum_id = spectrum.identifier
         if spectrum_index not in identifications:
             # TODO: what if no ids was found?
             continue
         identification = identifications[spectrum_index]
         sequence = pyopenms.AASequence().fromString(identification)
         modifications = {}
-        import pdb; pdb.set_trace()
-        for residue_index, residue in enumerate(sequence):
+        # import pdb; pdb.set_trace()
+        sequence.size()
+        for residue_index in range(sequence.size()):
+            residue = sequence.getResidue(residue_index)
             if residue.isModified():
                 delta_mass = residue.getModification().getDiffMonoMass()
                 modifications[residue_index] = delta_mass
-        new_spectrum = sus.spectrum.MsmsSpectrum(
-            spectrum.identifier,
-            spectrum.precursor_mz,
-            spectrum.precursor_charge,
-            spectrum.mz,
-            spectrum.intensity,
-            peptide=sequence.toUnmodifiedString(),
-            modifications=modifications
-        )
-        new_spectra[spectrum_id] = new_spectrum
-    return new_spectra
+        spectrum.peptide = sequence.toUnmodifiedString().decode()
+        spectrum.modifications = modifications
+        # new_spectrum = sus.MsmsSpectrum(
+        #     spectrum.identifier,
+        #     spectrum.precursor_mz,
+        #     spectrum.precursor_charge,
+        #     spectrum.mz,
+        #     spectrum.intensity,
+        #     peptide=sequence.toUnmodifiedString().decode(),
+        #     modifications=modifications
+        # )
+        # new_spectra[spectrum_id] = new_spectrum
+    return spectra
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
